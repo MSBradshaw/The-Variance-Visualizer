@@ -1,0 +1,14 @@
+Included in this directory are the following
+1. vv-app.R this is the file contains the UI and Server for The Variance Visualizer web app.
+2. parsepileup.R this file contains the helper functions for parseing pileup files and creating SVGs, this file is used by vv-app.R
+3. pileups-by-species this directory contains 25 pileup files from 7 different species which can be used as test data
+4. its1, its2 & 58s these directories contain the same information as the pileups-by-species but split up into the 3 sections of the ITS region, ITS1 5.8S and ITS2
+5. Dockerfile this is a docker file for creating an image with all dependencies needed to run BWA, Samtools and all the R dependances for VV. Currently the enviroment is built, but actually accessing the app from outside the docker container is not possible due to complications with mapping port numbers.
+6. pileup-spliter.py this is the script used to split the pileup files from pileups-by-species into the subsetted files fround in the its1, its2 and 58s directories.
+
+To run the app from the command line execute the following command
+R -e "shiny::runApp('vv-app.R')"
+After starting an ip address for your localhost and the chosen port number will appear, copy and past that into the browser view the app.
+Alternatively you can open vv-app.R in RStudio and just click the Run App button in the top right of the screen
+Or best option just visit: https://michael-bradshaw.shinyapps.io/variance_visualizer/
+Note, the above URL will not be up forever since I only have a limit amount of free run time left
