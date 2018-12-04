@@ -21,10 +21,11 @@ ui <- fluidPage(
   
 )
 server <- function(input, output) {
+  
   source('parsepileup.R')
   
   output$image_area <- renderUI({
-    if( is.na(input$file1) ){
+    if( is.null(input$file1) ){
       return(NULL)
     }
     names <- input$file1$name %>% str_replace('.pileup','')

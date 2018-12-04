@@ -9,6 +9,10 @@ library(stringr)
 #Cytosine	6	RED
 #Guanine	6	GREEN
 
+#this datastruct is not important for the functionality of the app
+#I am adding it to collect information I need for a table in a publication
+variance_info <- tibble(sample=c('delete_this_row'),position=c(0),percent=c(0))
+
 #return a matrix of the bp
 get_bp_info <- function(data){
   bp_info <- matrix(, nrow = 0, ncol = 4)
@@ -50,9 +54,9 @@ create_conscensus_svg_string <- function(bp_info,conscensus,variance,name){
   }
   x_count <- 120
   cons_vec <- strsplit(conscensus,'')
-
+  
   output <- paste('
-  <svg class="svg_item ', extra_class ,'">',sep='') 
+                  <svg class="svg_item ', extra_class ,'">',sep='') 
   output <- paste(output, '<text x="10" y="26" font-family="sans-serif" font-size="20px" fill="black">',name,'</text>')
   color <- c('A','C','G','T')
   
@@ -65,7 +69,7 @@ create_conscensus_svg_string <- function(bp_info,conscensus,variance,name){
     }
     
     variance <- 1 - (max(as.numeric(bp_info[i,])) / sum(as.numeric(bp_info[i,])))
-    if( is.na(variance) ){
+    if( is.null(variance) ){
       variance <- 0
     }
     if(variance == 0){
@@ -77,6 +81,7 @@ create_conscensus_svg_string <- function(bp_info,conscensus,variance,name){
       class <- paste(class, 'variance_10')
     }else{
       class <- paste(class, 'variance_high')
+      write_csv(tibble(sample=name,position=((x_count - 120) / 10),percent=variance),'variance_info.csv',append=TRUE)
     }
     
     line <- paste('<rect class="base ', class ,' " x="', x_count ,'" y="10" width="10" height="20" stroke="black"/>\n')
@@ -99,14 +104,14 @@ create_svg_string <- function(bp_info,variance=TRUE,bright=FALSE,name){
   total_variance <- 0
   x_count <- 120
   output <- paste('
-  <svg class="svg_item ', display_type ,'">',sep='') #this is inside a paste function so I can define the width of the svg
+                  <svg class="svg_item ', display_type ,'">',sep='') #this is inside a paste function so I can define the width of the svg
   output <- paste(output, '<text x="10" y="26" font-family="sans-serif" font-size="20px" fill="black">',name,'</text>')
   for( i in seq(1,nrow(bp_info))){
     #get the most common bp
     index <- which.max(bp_info[i,])
     color <- c('A','C','G','T')
     variance <- 1 - (max(bp_info[i,]) / sum(bp_info[i,]))
-    if(is.na(variance)){
+    if(is.null(variance)){
       variance <- 0
     }
     extra_class <- color[index]
@@ -120,13 +125,14 @@ create_svg_string <- function(bp_info,variance=TRUE,bright=FALSE,name){
       extra_class <- paste(extra_class, 'variance_10')
     }else{
       extra_class <- paste(extra_class, 'variance_high')
+      write_csv(tibble(sample=name,position=((x_count - 120) / 10),percent=variance),'variance_info.csv',append=TRUE)
     }
-    
+  
     line <- paste('<rect class="base ', extra_class ,' " x="', x_count ,'" y="10" width="10" height="20" stroke="black"/>\n')
     output <- paste(output, line)
     x_count <- x_count + 10
   }  
-
+  
   output <- paste(output, '</svg>')
   print(paste(name,'\t',(total_variance / nrow(bp_info))))
   
@@ -136,54 +142,69 @@ create_svg_string <- function(bp_info,variance=TRUE,bright=FALSE,name){
 #creates the style tag
 #bp_rows is the number of rows in the bp_info matrix
 get_style_string <- function(bp_rows){
-style <- paste('  <style>
-    .A{
-      fill: blue;
-    }
-  .C{
-    fill: red;
-  }
-  .G{
-    fill:green;
-  }
-  .T{
-    fill:yellow;
-  }
-  base:hover{
-    fill: green;
-  }
-  .variance .variance_none{
-    fill: black;
-  }
-  .variance .variance_01{
-    fill: #333333;
-  }
-  .variance .variance_10{
-    fill: #999999;
-  }
-  .variance .variance_high{
-    fill: #FFF;
-  }
-  .bright .variance_none{
-    fill: black;
-}
-.bright .variance_01{
-fill: #662900;
-}
-.bright .variance_10{
-fill: #e65c00;
-}
-.bright .variance_high{
-fill: #ffe0cc;
-}
-  .match{
-  fill: #E6E6E6;
-  }
-  .svg_item {
-    width:',(bp_rows * 10),'px;
-    height: 30px;
-  }
-  </style>',sep='')
+  style <- paste('  <style>
+                 .A{
+                 fill: blue;
+                 }
+                 .C{
+                 fill: red;
+                 }
+                 .G{
+                 fill:green;
+                 }
+                 .T{
+                 fill:yellow;
+                 }
+                 base:hover{
+                 fill: green;
+                 }
+                 .variance .variance_none{
+                 fill: black;
+                 }
+                 .variance .variance_01{
+                 fill: #333333;
+                 }
+                 .variance .variance_10{
+                 fill: #999999;
+                 }
+                 .variance .variance_high{
+                 fill: #FFF;
+                 }
+                 
+                 .bright text {
+                 display: none;
+                 }
+                 .bright .variance_none{
+                 fill: black;
+                 }
+                 .bright .variance_01{
+                 fill: #662900;
+                 }
+                 .bright .variance_10{
+                 fill: #e65c00;
+                 }
+                 .bright .variance_high{
+                 fill: #ffe0cc;
+                 }
+                 .match{
+                 fill: #E6E6E6;
+                 }
+                 .svg_item {
+                 width:',(bp_rows * 10),'px;
+                 height: 30px;
+                 margin-top: -8px;
+                 min-width: 100%;
+                 }
+                 .bright {
+                 margin-top: -12px;
+                 }
+                 .key {
+                 margin-bottom: 10px;
+                 }
+                 .key text{
+                 display: block;
+                 }
+                 </style>',sep='')
   return(style)
 }
 
@@ -219,7 +240,7 @@ get_bp_string <- function(bp_info){
 
 build_key <- function(image_option){
   if(image_option %in% 'variance'){
-    key <- '  <svg class="svg_item bright">
+    key <- '  <svg class="svg_item bright key">
     <rect class="base  match variance_none  " x=" 10 " y="10" width="10" height="20" stroke="black"/>
     <text x="25" y="26" font-family="sans-serif" font-size="20px" fill="black"> No Variance </text>
     <rect class="base  match variance_01  " x=" 150 " y="10" width="10" height="20" stroke="black"/>
@@ -230,7 +251,7 @@ build_key <- function(image_option){
     <text x="465" y="26" font-family="sans-serif" font-size="20px" fill="black"> + 10% </text>
     </svg>'
   }else if(image_option %in% 'normal'){
-    key <- '<svg class="svg_item"><rect class="base   A  " x=" 10 " y="10" width="10" height="20" stroke="black"/>
+    key <- '<svg class="svg_item key"><rect class="base   A  " x=" 10 " y="10" width="10" height="20" stroke="black"/>
     <text x="25" y="26" font-family="sans-serif" font-size="20px" fill="black"> A </text>
     <rect class="base   C  " x=" 60 " y="10" width="10" height="20" stroke="black"/>
     <text x="75" y="26" font-family="sans-serif" font-size="20px" fill="black"> C </text>
@@ -239,7 +260,7 @@ build_key <- function(image_option){
     <rect class="base   G  " x=" 160 " y="10" width="10" height="20" stroke="black"/>
     <text x="175" y="26" font-family="sans-serif" font-size="20px" fill="black"> T </text></svg>'
   }else if(image_option %in% 'consensus'){
-    key <- '   <svg class="svg_item "> <rect class="base   A  " x=" 10 " y="10" width="10" height="20" stroke="black"/>
+    key <- '   <svg class="svg_item key"> <rect class="base   A  " x=" 10 " y="10" width="10" height="20" stroke="black"/>
     <text x="25" y="26" font-family="sans-serif" font-size="20px" fill="black"> A </text>
     <rect class="base   C  " x=" 60 " y="10" width="10" height="20" stroke="black"/>
     <text x="75" y="26" font-family="sans-serif" font-size="20px" fill="black"> C </text>
@@ -250,7 +271,7 @@ build_key <- function(image_option){
     <rect class="base   match  " x=" 210 " y="10" width="10" height="20" stroke="black"/>
     <text x="225" y="26" font-family="sans-serif" font-size="20px" fill="black"> Match </text></svg>'
   }else if(image_option %in% 'hybrid'){
-    key <- '   <svg class="svg_item "> <rect class="base   A  " x=" 10 " y="10" width="10" height="20" stroke="black"/>
+    key <- '   <svg class="svg_item key"> <rect class="base   A  " x=" 10 " y="10" width="10" height="20" stroke="black"/>
     <text x="25" y="26" font-family="sans-serif" font-size="20px" fill="black"> A </text>
     <rect class="base   C  " x=" 60 " y="10" width="10" height="20" stroke="black"/>
     <text x="75" y="26" font-family="sans-serif" font-size="20px" fill="black"> C </text>
@@ -260,7 +281,7 @@ build_key <- function(image_option){
     <text x="175" y="26" font-family="sans-serif" font-size="20px" fill="black"> T </text>
     <rect class="base   match  " x=" 210 " y="10" width="10" height="20" stroke="black"/>
     <text x="225" y="26" font-family="sans-serif" font-size="20px" fill="black"> Match </text></svg>
-    <svg class="svg_item bright">
+    <svg class="svg_item bright key">
     <rect class="base  match variance_none  " x=" 10 " y="10" width="10" height="20" stroke="black"/>
     <text x="25" y="26" font-family="sans-serif" font-size="20px" fill="black"> No Variance </text>
     <rect class="base  match variance_01  " x=" 150 " y="10" width="10" height="20" stroke="black"/>
@@ -291,8 +312,13 @@ build_image <- function(files,image_option,color_option,front_trim,back_trim, na
   })
   #trim the data
   for(i in seq(1,length(file_infos))){
-    file_infos[[i]] <- file_infos[[i]][front_trim:(nrow(file_infos[[i]]) - back_trim),]
-    #get the base paor information
+    
+    #instead of trimming, use the second field as a length parameter
+    file_infos[[i]] <- file_infos[[i]][front_trim:(front_trim + back_trim),]
+    #below is the original way the code worked, using back trim
+    #file_infos[[i]] <- file_infos[[i]][front_trim:(nrow(file_infos[[i]]) - back_trim),]
+    #get the base pair information
+    
     file_infos[[i]] <- get_bp_info(file_infos[[i]])
   }
   #generate image depending on the type of image requested
@@ -363,4 +389,3 @@ paths <- c('final_dirs/8664_2/pileup.pileup',
 names <- c('8664_2','8664_3','8664_4','8664_5','8664_6')
 
 #thing2 <- build_image(paths,'variance','',600,600,names)
-
