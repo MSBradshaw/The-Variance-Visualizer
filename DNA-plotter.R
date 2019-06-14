@@ -151,10 +151,11 @@ get_consensus <- function(x,ref){
   for( samp in unique(its1$sample)){
     temp <- x[x$sample == samp,]
     seq <- get_seq(temp,samp)
-    aln <- subject(pairwiseAlignment(ref,seq,gapExtension=2,gapOpening=4))
+    aln <- seq#subject(pairwiseAlignment(ref,seq,gapExtension=4,gapOpening=10))
     count  = 1
     spaces_count <- 0
     for( letter in strsplit(toString(aln),'')[[1]]){
+      letter <- tolower(letter)
       if(letter == 'a'){
         As[count] <- As[count] + 1
       }else if (letter == 'c'){
@@ -163,7 +164,7 @@ get_consensus <- function(x,ref){
         Gs[count] <- Gs[count] + 1
       }else if (letter == 't'){
         Ts[count] <- Ts[count] + 1
-      }else if (letter == '-'){
+      }else if (letter == '-' || letter == 'n'){
         spaces[count] <- spaces[count] + 1
         #get the index of the current count in the temp tibble
         num <- match((count-spaces_count),as.numeric(temp$count))
@@ -171,6 +172,7 @@ get_consensus <- function(x,ref){
         temp = add_row(temp,A=0,C=0,G=0,T=0,variance=0,sample=temp$sample[1],base='-',count=-1,.after=(num-1))
         spaces_count <- spaces_count  + 1
       }else{
+        print(letter)
         print('Dammit')
       }
       count <- count + 1
@@ -211,6 +213,7 @@ get_simple_consensus <- function(x,ref){
     count  = 1
     spaces_count <- 0
     for( letter in strsplit(seq,'')[[1]]){
+      letter <- tolower(letter)
       if(letter == 'a'){
         As[count] <- As[count] + 1
       }else if (letter == 'c'){
@@ -219,7 +222,7 @@ get_simple_consensus <- function(x,ref){
         Gs[count] <- Gs[count] + 1
       }else if (letter == 't'){
         Ts[count] <- Ts[count] + 1
-      }else if (letter == '-'){
+      }else if (letter == '-' || letter == 'n'){
         spaces[count] <- spaces[count] + 1
         #get the index of the current count in the temp tibble
         num <- match((count-spaces_count),as.numeric(temp$count))
@@ -227,7 +230,8 @@ get_simple_consensus <- function(x,ref){
         temp = add_row(temp,A=0,C=0,G=0,T=0,variance=0,sample=temp$sample[1],base='-',count=-1,.after=(num-1))
         spaces_count <- spaces_count  + 1
       }else{
-        print('Dammit')
+        print(letter)
+        print('Dammit2')
       }
       count <- count + 1
     }
@@ -256,17 +260,27 @@ get_simple_consensus <- function(x,ref){
 
 #add a column to the bp_info of where the base matches the consensus sequence or not
 compare_seq_to_con <- function(data,con){
+  data[is.na(data$base),7] <- '-'
   con_vec <- strsplit(toString(con),'')[[1]]
+  i = 1
   data$consensus_match <- apply(data,1,function(row){
     base <- row[7]
     pos <- as.numeric(str_trim(row[8]))
-    #print(pos)
-    #print(length(con_vec))
+    #print(i)
+#    print(pos)
+#    print(length(con_vec))
+    if(i == 10532 || i == 10343){
+      one =1
+      #stop here
+    }
     if(pos > length(con_vec)){
+      i <<- i +1
       return(base)
     }else if(con_vec[[pos]] != base){
+      i <<- i +1
       return(base)
     }else{
+      i <<- i +1
       return('match')
     }
   })
@@ -280,9 +294,9 @@ s58_span <- 161
 its2_trim <- s58_trim + s58_span
 its2_span <- 157
 
-its1 <- get_sections(files,names,its1_trim,its1_span)
-s58 <- get_sections(files,names,s58_trim,s58_span)
-its2 <- get_sections(files,names,its2_trim,its2_span)
+its1 <- get_sections(files,names,its1_trim,513)
+#s58 <- get_sections(files,names,s58_trim,s58_span)
+#its2 <- get_sections(files,names,its2_trim,its2_span)
 
 
 #plot the deviations from the consensus sequence 
@@ -298,8 +312,8 @@ its1_final_info <- compare_seq_to_con(its1_info[[2]],its1_con[[1]])
 
 samps <- unique(its1_final_info$sample)
 
-small <- its1_final_info[its1_final_info$sample %in% c("hayd_8678_A",samps[13]),]
-p <- ggplot(data = small,aes(x=count,y=sample,color=base),fill=consensus_match) + 
+small <- its1_final_info[its1_final_info$sample %in% c("hayd_8678_A",samps[34]),]
+p <- ggplot(data = its1_final_info,aes(x=count,y=sample,color=base),fill=consensus_match) + 
   geom_point(shape=15) + 
   theme_minimal() + 
   scale_color_manual(values=c("#000000", "#ff0000", "#0000ff", "#009900","#e5e5e5","#ffff00"))
