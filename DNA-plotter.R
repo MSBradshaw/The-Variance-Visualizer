@@ -32,6 +32,13 @@ get_bp_info_as_tibble <- function(data){
   return(bp_info)
 }
 
+get_majority_base <- function(data){
+  bases <- c('a','c','g','t')
+  apply(data,1,function(row){
+    bases[which.max(row[1:4])]
+  })
+}
+
 get_info <- function(data){
   bp_info <- get_bp_info_as_tibble(data)
   var <- apply(bp_info,1,function(row){
@@ -132,6 +139,7 @@ get_sections <- function(files,names,start,span){
       data <- bind_rows(data,temp) 
     }
   }
+  data$base <- get_majority_base(data)
   return(data)
 }
 
@@ -256,7 +264,34 @@ get_simple_consensus <- function(x,ref){
   return(list(consensus,bp_infos))
 }
 
-
+add_variance_points <- function(data){
+  data <- bind_rows(data,data)
+  data$sample[(nrow(data)/2):nrow(data)] <- lapply(data[(nrow(data)/2):nrow(data),]$sample,function(x){
+    return(paste(x,'*',sep=''))
+  })
+  data$sample <- factor(as.character(unlist(data$sample)))
+  data$sample <- revalue(data$sample, c("hayd_8678_A*"=" ",   "hayd_8865_U*"="  ",   "hayd_8935_P*"="   ",   "mela_8668_B*"="    ",   "mela_8800_A*"="     ",   "mela_8801_T*"="      ",   "mela_8802_T*"="       ",   "mela_8810_T*"="        ", "mela_REF*"="         ",      "novo_8684*"="          ",     "novo_8684dL_S1*"="           ","occulta_8807i*"="            ", "occulta_8807iv*"="             ","pari_8665_N*"="              ",   "pari_8803_G*"="               ",   "pari_8806_A*"="                ", "parilis_8805*"="                 ",  "poly_8663_O*"="                  ",   "poly_8663_T*"="                   ",   "poly_8665u*"="                    ",    "poly_8668_G*"="                     ",   "poly_8807iii*"="                      ",  "poly_8935_B*"="                       ",   "port_8663_A*"="                        ", "port_8668_A*"="                         ",   "port_8795_T*"="                          ",   "port_8796_T*"="                          ",   "port_8797_C*"="                           ",   "shus_8664_2*"="                            ",   "shus_8664_3*"="                             ",   "shus_8664_4*"="                              ",   "shus_8664_5*"="                               ", "shus_8664_6*"="                                "))
+  
+  data$hybrid <- data$consensus_match
+  data$variance[is.na(data$variance)] <- 0
+  data$hybrid[(nrow(data)/2):nrow(data)] <- apply(data[(nrow(data)/2):nrow(data),],1,function(x){
+    #5 is the variance
+    var <- x[5]
+    if(var == 0 || var  < .001){
+      return('0')
+    }else if(var > .1){
+      return('+10%')
+    }else if(var > .01){
+      return('1-9%')
+    }else if(var > 0){
+      return('< 1%')
+    }else{
+      print('Error')
+      return('0')
+    }
+  })
+  return(data)
+}
 
 #add a column to the bp_info of where the base matches the consensus sequence or not
 compare_seq_to_con <- function(data,con){
@@ -295,12 +330,9 @@ its2_trim <- s58_trim + s58_span
 its2_span <- 157
 
 its1 <- get_sections(files,names,its1_trim,513)
-#s58 <- get_sections(files,names,s58_trim,s58_span)
-#its2 <- get_sections(files,names,its2_trim,its2_span)
-
 
 #plot the deviations from the consensus sequence 
-ref_its1_8678 <- get_seq(its1,'hayd_8678_A')
+ref_its1_8678 <- get_seq(its1,'port_8663_A')
 its1_info <- get_consensus(its1,ref_its1_8678)
 its1_final_info <- compare_seq_to_con(its1_info[[2]],ref_its1_8678)
 
@@ -312,12 +344,18 @@ its1_final_info <- compare_seq_to_con(its1_info[[2]],its1_con[[1]])
 
 samps <- unique(its1_final_info$sample)
 
-small <- its1_final_info[its1_final_info$sample %in% c("hayd_8678_A",samps[34]),]
-p <- ggplot(data = its1_final_info,aes(x=count,y=sample,color=base),fill=consensus_match) + 
+#change the order of the consensus_match column's factors so they appear correctly in the legend
+its1_final_info$consensus_match <- factor(its1_final_info$consensus_match,levels=c('match','a','c','g','t','0','+10%','1-9%','< 1%'))
+its1_final_info <- add_variance_points(its1_final_info)
+
+p <- ggplot(data = its1_final_info,aes(x=count,y=sample,color=hybrid),fill=hybrid) + 
   geom_point(shape=15) + 
   theme_minimal() + 
-  scale_color_manual(values=c("#000000", "#ff0000", "#0000ff", "#009900","#e5e5e5","#ffff00"))
-ggsave('ITS1-sample.png',width = 12, height = 5, units = c("in"))
+  scale_color_manual(values=c( "#e5e5e5","#ff0000", "#4d4dff", "#0000ff","#b3b300",'#000000','#ff80ff','#ff00ff','#800080')) +
+  xlab('Nucleotide Position') + 
+  ylab('Sample') + 
+  theme(legend.title=element_blank())
+ggsave('ITS-Hybrid.png',width = 12, height = 5, units = c("in"))
 
 
 #sample, number, base, variance, A, T, C, G
