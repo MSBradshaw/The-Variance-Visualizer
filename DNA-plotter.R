@@ -4,6 +4,7 @@ library(tibble)
 library(dplyr)
 library(Biostrings)
 library(stringr)
+library(plyr)
 
 get_bp_info_as_tibble <- function(data){
   bp_info <- matrix(, nrow = 0, ncol = 4)
@@ -73,10 +74,8 @@ files <- c('PileUps-April-2019/8663_A_CGGCTATG-CAGGACGT_L002_.pileup',
            'PileUps-April-2019/8668_B_CGCTCATT-CAGGACGT_L002_.pileup',
            'PileUps-April-2019/melanophthalma_REF_.pileup',
            'PileUps-April-2019/8668_G_CTGAAGCT-ATAGAGGC_L002_.pileup',
-           'PileUps-April-2019/novomexicana_8684d_.pileup',
            'PileUps-April-2019/8678_ATTACTCG-TATAGCCT_L002_.pileup',
            'PileUps-April-2019/occulta_8807i_.pileup',
-           'PileUps-April-2019/8684dLnovomexicana_S1_L001_001_.pileup',
            'PileUps-April-2019/occulta_8807iv_.pileup',
            'PileUps-April-2019/8795_TAATGCGC-GGCTCTGA_L002_.pileup',
            'PileUps-April-2019/parilis_8805_.pileup',
@@ -86,39 +85,37 @@ files <- c('PileUps-April-2019/8663_A_CGGCTATG-CAGGACGT_L002_.pileup',
            'PileUps-April-2019/polymorpha_8807iii_.pileup',
            'PileUps-April-2019/8800_ATTACTCG-CCTATCCT_L002_.pileup')
 
-names <- c('port_8663_A',
-           'mela_8801_T',
-           'poly_8663_O',
-           'mela_8802_T',
-           'poly_8663_T',
-           'pari_8803_G',
-           'shus_8664_2',
-           'shus_8664_3',
-           'pari_8806_A',
-           'shus_8664_4',
-           'shus_8664_5',
-           'mela_8810_T',
-           'shus_8664_6',
-           'hayd_8865_U',
-           'pari_8665_N',
-           'poly_8935_B',
-           'port_8668_A',
-           'hayd_8935_P',
-           'mela_8668_B',
-           'mela_REF',
-           'poly_8668_G',
-           'novo_8684',
-           'hayd_8678_A',
-           'occulta_8807i',
-           'novo_8684dL_S1',
-           'occulta_8807iv',
-           'port_8795_T',
-           'parilis_8805',
-           'port_8796_T',
-           'poly_8665u',
-           'port_8797_C',
-           'poly_8807iii',
-           'mela_8800_A')
+names <- c('Rhpor A',
+           'Rhme A',
+           'Rhpol A',
+           'Rhme B',
+           'Rhpol B',
+           'Rhpa A',
+           'Rhsu A',
+           'Rhsu B',
+           'Rhpa B',
+           'Rhsu C',
+           'Rhsu D',
+           'Rhme C',
+           'Rhsu E',
+           'hayd A',
+           'Rhpa C',
+           'Rhpol C',
+           'Rhpor B',
+           'hayd B',
+           'Rhme D',
+           'Rhme REF',
+           'Rhpol D',
+           'hayd C',
+           'Rhoc A',
+           'Rhoc B',
+           'Rhpor C',
+           'Rhpa D',
+           'Rhpor D',
+           'Rhpol E',
+           'Rhpor E',
+           'Rhpol F',
+           'Rhme F')
 
 get_sections <- function(files,names,start,span){
   print(files[[1]])
@@ -270,8 +267,7 @@ add_variance_points <- function(data){
     return(paste(x,'*',sep=''))
   })
   data$sample <- factor(as.character(unlist(data$sample)))
-  data$sample <- revalue(data$sample, c("hayd_8678_A*"=" ",   "hayd_8865_U*"="  ",   "hayd_8935_P*"="   ",   "mela_8668_B*"="    ",   "mela_8800_A*"="     ",   "mela_8801_T*"="      ",   "mela_8802_T*"="       ",   "mela_8810_T*"="        ", "mela_REF*"="         ",      "novo_8684*"="          ",     "novo_8684dL_S1*"="           ","occulta_8807i*"="            ", "occulta_8807iv*"="             ","pari_8665_N*"="              ",   "pari_8803_G*"="               ",   "pari_8806_A*"="                ", "parilis_8805*"="                 ",  "poly_8663_O*"="                  ",   "poly_8663_T*"="                   ",   "poly_8665u*"="                    ",    "poly_8668_G*"="                     ",   "poly_8807iii*"="                      ",  "poly_8935_B*"="                       ",   "port_8663_A*"="                        ", "port_8668_A*"="                         ",   "port_8795_T*"="                          ",   "port_8796_T*"="                          ",   "port_8797_C*"="                           ",   "shus_8664_2*"="                            ",   "shus_8664_3*"="                             ",   "shus_8664_4*"="                              ",   "shus_8664_5*"="                               ", "shus_8664_6*"="                                "))
-  
+  #data$sample <- revalue(data$sample, c("Rhme A*"=" ",   "Rhpor A*"="  "))
   data$hybrid <- data$consensus_match
   data$variance[is.na(data$variance)] <- 0
   data$hybrid[(nrow(data)/2):nrow(data)] <- apply(data[(nrow(data)/2):nrow(data),],1,function(x){
@@ -332,7 +328,7 @@ its2_span <- 157
 its1 <- get_sections(files,names,its1_trim,513)
 
 #plot the deviations from the consensus sequence 
-ref_its1_8678 <- get_seq(its1,'port_8663_A')
+ref_its1_8678 <- get_seq(its1,'Rhpor A')
 its1_info <- get_consensus(its1,ref_its1_8678)
 its1_final_info <- compare_seq_to_con(its1_info[[2]],ref_its1_8678)
 
@@ -354,7 +350,9 @@ p <- ggplot(data = its1_final_info,aes(x=count,y=sample,color=hybrid),fill=hybri
   scale_color_manual(values=c( "#e5e5e5","#ff0000", "#4d4dff", "#0000ff","#b3b300",'#000000','#ff80ff','#ff00ff','#800080')) +
   xlab('Nucleotide Position') + 
   ylab('Sample') + 
-  theme(legend.title=element_blank())
+  theme(legend.title=element_blank()) + 
+  geom_vline(xintercept=its1_span, linetype="solid", color = "red") +
+  geom_vline(xintercept=(its1_span+s58_span), linetype="solid", color = "red") 
 ggsave('ITS-Hybrid.png',width = 12, height = 5, units = c("in"))
 
 
